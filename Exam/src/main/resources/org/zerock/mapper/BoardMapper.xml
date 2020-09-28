@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.mapper.BoardMapper">
+	<sql id="search">
+		<if test="type !=null">
+			<if test="type == 't'.toString()">
+				where title like CONCAT('%',#{keyword},'%')
+			</if>
+			<if test="type == 'c'.toString()">
+				where content like CONCAT('%',#{keyword},'%')
+			</if>
+			<if test="type == 'w'.toString()">
+				where writer like CONCAT('%',#{keyword},'%')
+			</if>
+			<if test="type == 'tc'.toString()">
+				where (title like CONCAT('%',#{keyword},'%') OR content
+				like
+				CONCAT('%',#{keyword},'%') )
+			</if>
+			<if test="type == 'cw'.toString()">
+				where (content like CONCAT('%',#{keyword},'%') OR writer
+				like
+				CONCAT('%',#{keyword},'%') )
+			</if>
+			<if test="type == 'tcw'.toString()">
+				where (title like CONCAT('%',#{keyword},'%')
+				OR content
+				like
+				CONCAT('%',#{keyword},'%') OR writer like
+				CONCAT('%',#{keyword},'%')
+				)
+			</if>
+		</if>
+	</sql>
+	<insert id="create">
+		<selectKey keyProperty="bno" order="BEFORE" resultType="int" >
+			select max(bno)+1 bno from tbl_board
+		</selectKey>
+	
+		INSERT INTO tbl_board (bno,title,content,writer)
+		VALUES(#{bno},#{title},#{content},#{writer})
+	</insert>
+	<select id="read" resultType="org.zerock.domain.BoardVO">
+		SELECT * FROM tbl_board WHERE
+		bno=#{bno}
+	</select>
+	<update id="update">
+		UPDATE tbl_board SET title=#{title}
+		,content=#{content} WHERE bno=#{bno}
+	</update>
+	<delete id="delete">
+		DELETE FROM tbl_board WHERE bno=#{bno};
+	</delete>
+	<select id="listAll" resultType="org.zerock.domain.BoardVO">
+			<![CDATA[
+		select* from(
+		select @rownum:=@rownum+1 as rownum, b.*
+		from (select @rownum:=0) as tmp, tbl_board as b
+				]]>
+		<include refid="search"/>
+		<![CDATA[
+	order by bno desc
+	) as boardList
+		]]>
+	</select>
+	<select id="listPage" resultType="org.zerock.domain.BoardVO">
+		<![CDATA[
+		select* from(
+		select @rownum:=@rownum+1 as rownum, b.*
+		from (select @rownum:=0) as tmp, tbl_board as b
+				]]>
+		<include refid="search" />
+		<![CDATA[
+		order by bno desc
+		) as boardList
+		where  rownum > (#{pageNum}-1)*#{amount} and rownum <= #{pageNum}*#{amount}
+		]]>
+	</select>
+	<select id="getTotalCount" resultType="int">
+	<![CDATA[
+	SELECT COUNT(*) FROM tbl_board 
+		]]>
+	 <include refid="search"></include>
+	order by bno desc
+	</select>
+	<update id="listCount">
+		UPDATE tbl_board SET viewcnt= viewcnt +1 where bno=#{bno}
+	</update>
+</mapper>
